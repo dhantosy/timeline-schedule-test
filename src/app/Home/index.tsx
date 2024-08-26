@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react';
+import { ChangeEvent, useCallback, useState } from 'react';
 import moment from 'moment';
 import Title from '@/components/Title';
 import Button from '@/components/Button';
@@ -11,10 +11,18 @@ import { HomeProps, HomeDataProps } from './types';
 
 export default function Home({ data }: HomeProps) {
   const [listData, setListData] = useState(data);
+  const [searchedUsers, setSearchedUsers] = useState(data);
+  const [submitted, setSubmitted] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const groups = listData.map(({ user }) => {
+  const groups = searchedUsers.length && !submitted ? searchedUsers.map(({ user }) => {
+    return {
+      id: user,
+      title: user,
+      height: 60
+    }
+  }) : listData.map(({ user }) => {
     return {
       id: user,
       title: user,
@@ -22,7 +30,15 @@ export default function Home({ data }: HomeProps) {
     }
   });
 
-  const items = listData.map(({ user, start, end }) => {
+  const items = searchedUsers.length && !submitted ? searchedUsers.map(({ user, start, end }) => {
+    return {
+      id: user,
+      group: user,
+      title: `${moment(start).format('D MMM')} - ${moment(end).format('D MMM')}`,
+      start_time: moment(start).startOf('day'),
+      end_time: moment(end).endOf('day'),
+    }
+  }) : listData.map(({ user, start, end }) => {
     return {
       id: user,
       group: user,
@@ -53,8 +69,18 @@ export default function Home({ data }: HomeProps) {
         end,
       }
     ]);
+    setSubmitted(true);
     handleCloseModal();
   }, [listData]);
+
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
+    const filteredItems = listData.filter((user) =>
+      user.user.toLowerCase().includes(e.target.value.toLowerCase())
+    );
+
+    setSubmitted(false);
+    setSearchedUsers(filteredItems);
+  };
 
   return (
     <main className='my-10'>
@@ -75,6 +101,7 @@ export default function Home({ data }: HomeProps) {
       <ScheduleTimeline
         groups={groups}
         items={items}
+        onSearch={handleSearch}
       />
       <Modal
         shouldShow={showModal}
